@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 from tsfresh.feature_extraction import MinimalFCParameters
+import tsfresh
 
 # Baseline FHR value
 # Measured as the mean of all signal values
@@ -249,7 +250,8 @@ def extract_features_tsfresh(fhr_signal: np.ndarray, sampling_rate: int = 4) -> 
             column_sort="time",
             column_value="value",
             default_fc_parameters=minimal_settings,
-            disable_progressbar=True
+            disable_progressbar=True,
+            n_jobs=0
         )
         
         features = {f"tsfresh_{k}": v for k, v in tsf_feats.iloc[0].items()}
