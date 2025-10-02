@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from .feature_extraction import extract_features_combined
 from .model import load_and_predict
 from .evaluate import pretty_print_predictions
+from .utils import smooth_signal
 
 
 app = FastAPI(title="Fetal Health CatBoost API")
@@ -64,10 +65,27 @@ async def predict(
     bpm: UploadFile = File(..., description="CSV/XLSX: time,value"),
     uterus: UploadFile = File(..., description="CSV/XLSX: time,value"),
     threshold: float = 0.5,
+    smooth: bool = False,
+    smooth_method: str = "moving_average",
+    smooth_window_seconds: int = 5,
 ):
     try:
         fhr_signal = _read_signal_from_upload(bpm)
         uterine_signal = _read_signal_from_upload(uterus)
+
+        if smooth:
+            fhr_signal = smooth_signal(
+                fhr_signal,
+                method=smooth_method,
+                window_seconds=smooth_window_seconds,
+                sampling_rate=4,
+            )
+            uterine_signal = smooth_signal(
+                uterine_signal,
+                method=smooth_method,
+                window_seconds=smooth_window_seconds,
+                sampling_rate=4,
+            )
 
         feats = extract_features_combined(fhr_signal, uterine_signal, sampling_rate=4)
         features_df = pd.DataFrame([feats])

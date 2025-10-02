@@ -6,6 +6,7 @@ import pandas as pd
 
 from feature_extraction import extract_features_combined
 from model import load_and_predict
+from utils import smooth_signal
 
 
 def _read_signal_from_file(path: str) -> np.ndarray:
@@ -43,6 +44,9 @@ def run_models_on_files(
     uterine_path: str,
     sampling_rate: int = 4,
     threshold: float = 0.5,
+    smooth: bool = False,
+    smooth_method: str = "moving_average",
+    smooth_window_seconds: int = 5,
 ) -> Tuple[pd.DataFrame, Any]:
     """
     Загружает два файла сигналов (FHR и Uterus), извлекает признаки и прогоняет модели CatBoost.
@@ -51,6 +55,20 @@ def run_models_on_files(
     """
     fhr_signal = _read_signal_from_file(fhr_path)
     uterine_signal = _read_signal_from_file(uterine_path)
+
+    if smooth:
+        fhr_signal = smooth_signal(
+            fhr_signal,
+            method=smooth_method,
+            window_seconds=smooth_window_seconds,
+            sampling_rate=sampling_rate,
+        )
+        uterine_signal = smooth_signal(
+            uterine_signal,
+            method=smooth_method,
+            window_seconds=smooth_window_seconds,
+            sampling_rate=sampling_rate,
+        )
 
     feats = extract_features_combined(fhr_signal, uterine_signal, sampling_rate=sampling_rate)
     features_df = pd.DataFrame([feats])

@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  fetal_health:
+    build: .
+    image: lct_fetal_health:latest
+    container_name: lct_fetal_health
+    ports:
+      - "8000:8000"  # model_api
+      - "9000:9000"  # backend
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_API_URL=http://localhost:8000/predict
+      - WINDOW_MINUTES=5
+      - PREDICT_THRESHOLD=0.5
+    restart: unless-stopped
