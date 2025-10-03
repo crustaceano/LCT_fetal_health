@@ -1,15 +1,70 @@
 version: "3.9"
+
 services:
-  fetal_health:
+  db:
+    image: postgres:15.2
+    container_name: postgres_fetal
+    restart: unless-stopped
+    env_file:
+      - ./src/backend/db/.env         # где лежат POSTGRES_* переменные
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./src/backend/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:  # контейнер, который запускает И model_api (9000), И backend (8000)
     build: .
     image: lct_fetal_health:latest
     container_name: lct_fetal_health
-    ports:
-      - "8000:8000"  # model_api
-      - "9000:9000"  # backend
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - PYTHONUNBUFFERED=1
-      - MODEL_API_URL=http://localhost:8000/predict
-      - WINDOW_MINUTES=5
-      - PREDICT_THRESHOLD=0.5
+      # модельный API и параметры
+      PYTHONUNBUFFERED: "1"
+      MODEL_API_URL: "http://localhost:9000/predict"  # внутри контейнера backend стучится на свой же 9000
+      WINDOW_MINUTES: "5"
+      PREDICT_THRESHOLD: "0.5"
+
+      # строки подключения к БД для backend
+      # важно: host = db (имя сервиса), порт = 5432 (внутри сети)
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: "db"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      # если у вас используются переменные DB в коде:
+      SYNC_DSN: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      ASYNC_DSN: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+    ports:
+      - "8000:8000"  # backend
+      - "9000:9000"  # model_api
     restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: fetal_frontend
+    depends_on:
+      - api
+    environment:
+      # адреса API/WS с машины разработчика
+      NEXT_PUBLIC_API_HTTP: "http://localhost:8000"
+      NEXT_PUBLIC_API_WS: "ws://localhost:8000/ws"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

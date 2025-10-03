@@ -7,10 +7,10 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .feature_extraction import extract_features_combined
-from .model import load_and_predict
-from .evaluate import pretty_print_predictions
-from .utils import smooth_signal
+from feature_extraction import extract_features_combined
+from model import load_and_predict
+from evaluate import pretty_print_predictions
+from utils import smooth_signal
 
 
 app = FastAPI(title="Fetal Health CatBoost API")
@@ -106,6 +106,6 @@ async def predict(
 # Для локального запуска: uvicorn src.model_api.model_app:app --reload
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.model_api.model_app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.model_api.model_app:app", host="0.0.0.0", port=9000, reload=True)
 
 

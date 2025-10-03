@@ -21,4 +21,4 @@ COPY src/ /app/src/
 EXPOSE 8000 9000
 
 # Default command runs both services
-CMD ["sh", "-c", "uvicorn src.model_api.model_app:app --host 0.0.0.0 --port 8000 & uvicorn src.backend.app:app --host 0.0.0.0 --port 9000 & wait"]
+CMD ["sh", "-c", "uvicorn src.model_api.model_app:app --host 0.0.0.0 --port 9000 & uvicorn src.backend.app:app --host 0.0.0.0 --port 8000 --workers 1 & wait"]

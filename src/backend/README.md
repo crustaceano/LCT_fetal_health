@@ -6,12 +6,12 @@
 
 1) Установите зависимости:
 ```bash
-pip install fastapi uvicorn httpx pydantic
+pip install fastapi uvicorn httpx pydantic asyncpg sqlalchemy serial
 ```
 
 2) Запуск сервера:
 ```bash
-uvicorn src.backend.app:app --reload --port 9000
+uvicorn src.backend.app:app --reload --port 8000 --workers 1
 ```
 
 ## Конфигурация (env)
